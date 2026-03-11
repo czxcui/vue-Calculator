@@ -9,6 +9,21 @@
       <div class="calc-output">{{ displayValue }}</div>
     </section>
     <section class="calc-pad">
+      <button class="key key-memory" @click="memoryClear">MC</button>
+      <button class="key key-memory" @click="memoryRecall">MR</button>
+      <button class="key key-memory" @click="memoryAdd">M+</button>
+      <button class="key key-memory" @click="memorySubtract">M-</button>
+
+      <button class="key key-fn" @click="applyUnary('sin')">sin</button>
+      <button class="key key-fn" @click="applyUnary('cos')">cos</button>
+      <button class="key key-fn" @click="applyUnary('tan')">tan</button>
+      <button class="key key-fn" @click="applyUnary('ln')">ln</button>
+
+      <button class="key key-fn" @click="applyUnary('log')">log</button>
+      <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
+      <button class="key key-fn" @click="applyUnary('exp')">eˣ</button>
+      <button class="key key-fn" @click="insertConstant('pi')">π</button>
+
       <button class="key key-muted" @click="handlePercent">%</button>
       <button class="key key-muted" @click="clearEntry">CE</button>
       <button class="key key-muted" @click="clearAll">C</button>
@@ -52,6 +67,8 @@ const currentOperator = ref(null);
 const waitingForNewValue = ref(false);
 const lastOperator = ref(null);
 const lastOperand = ref(null);
+const memoryValue = ref(0);
+const memoryActive = ref(false);
 
 const operatorLabels = {
   "+": "+",
@@ -65,12 +82,15 @@ const formatNumber = (value) => {
     return "错误";
   }
 
-  const text = value.toString();
-  if (text.includes("e")) {
-    return text.replace("e", "E");
+  const normalized = value.toString();
+  const cleaned = normalized.replace("e", "E");
+
+  if (cleaned.length <= 14) {
+    return cleaned;
   }
 
-  return text;
+  const exponential = value.toExponential(8).replace("e", "E");
+  return exponential;
 };
 
 const updateHistory = () => {
@@ -81,6 +101,12 @@ const updateHistory = () => {
 
   historyValue.value = `${formatNumber(previousValue.value)} ${operatorLabels[currentOperator.value]}`;
 };
+
+const setHistoryExpression = (text) => {
+  historyValue.value = text;
+};
+
+const toRadians = (value) => (value * Math.PI) / 180;
 
 const inputDigit = (digit) => {
   if (displayValue.value === "错误") {
@@ -124,6 +150,7 @@ const clearAll = () => {
 
 const clearEntry = () => {
   displayValue.value = "0";
+  waitingForNewValue.value = false;
 };
 
 const backspace = () => {
@@ -175,6 +202,12 @@ const setOperator = (operator) => {
     return;
   }
 
+  if (waitingForNewValue.value && previousValue.value !== null) {
+    currentOperator.value = operator;
+    updateHistory();
+    return;
+  }
+
   const inputValue = Number(displayValue.value);
 
   if (previousValue.value === null) {
@@ -198,6 +231,7 @@ const handleEquals = () => {
   const inputValue = Number(displayValue.value);
 
   if (currentOperator.value) {
+    const leftValue = previousValue.value;
     const operand = waitingForNewValue.value ? previousValue.value : inputValue;
     const result = calculate(previousValue.value, operand, currentOperator.value);
 
@@ -205,15 +239,21 @@ const handleEquals = () => {
     lastOperand.value = operand;
     displayValue.value = formatNumber(result);
     previousValue.value = result;
+    setHistoryExpression(
+      `${formatNumber(leftValue)} ${operatorLabels[currentOperator.value]} ${formatNumber(operand)} =`
+    );
     currentOperator.value = null;
     waitingForNewValue.value = true;
-    historyValue.value = "";
     return;
   }
 
   if (lastOperator.value && lastOperand.value !== null) {
-    const result = calculate(Number(displayValue.value), lastOperand.value, lastOperator.value);
+    const leftValue = Number(displayValue.value);
+    const result = calculate(leftValue, lastOperand.value, lastOperator.value);
     displayValue.value = formatNumber(result);
+    setHistoryExpression(
+      `${formatNumber(leftValue)} ${operatorLabels[lastOperator.value]} ${formatNumber(lastOperand.value)} =`
+    );
     waitingForNewValue.value = true;
   }
 };
@@ -246,9 +286,67 @@ const applyUnary = (type) => {
     result = inputValue * inputValue;
   } else if (type === "sqrt") {
     result = inputValue < 0 ? NaN : Math.sqrt(inputValue);
+  } else if (type === "sin") {
+    result = Math.sin(toRadians(inputValue));
+  } else if (type === "cos") {
+    result = Math.cos(toRadians(inputValue));
+  } else if (type === "tan") {
+    result = Math.tan(toRadians(inputValue));
+  } else if (type === "ln") {
+    result = inputValue <= 0 ? NaN : Math.log(inputValue);
+  } else if (type === "log") {
+    result = inputValue <= 0 ? NaN : Math.log10(inputValue);
+  } else if (type === "abs") {
+    result = Math.abs(inputValue);
+  } else if (type === "exp") {
+    result = Math.exp(inputValue);
   }
 
   displayValue.value = formatNumber(result);
   waitingForNewValue.value = true;
+};
+
+const insertConstant = (constant) => {
+  let value = 0;
+  if (constant === "pi") {
+    value = Math.PI;
+  }
+
+  displayValue.value = formatNumber(value);
+  waitingForNewValue.value = false;
+};
+
+const memoryClear = () => {
+  memoryValue.value = 0;
+  memoryActive.value = false;
+};
+
+const memoryRecall = () => {
+  if (!memoryActive.value) {
+    return;
+  }
+
+  displayValue.value = formatNumber(memoryValue.value);
+  waitingForNewValue.value = false;
+};
+
+const memoryAdd = () => {
+  const inputValue = Number(displayValue.value);
+  if (!Number.isFinite(inputValue)) {
+    return;
+  }
+
+  memoryValue.value += inputValue;
+  memoryActive.value = true;
+};
+
+const memorySubtract = () => {
+  const inputValue = Number(displayValue.value);
+  if (!Number.isFinite(inputValue)) {
+    return;
+  }
+
+  memoryValue.value -= inputValue;
+  memoryActive.value = true;
 };
 </script>
