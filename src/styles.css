@@ -67,19 +67,26 @@ body {
   background-color: var(--display-bg);
   border: 1px solid #1f232c;
   text-align: right;
+  overflow: hidden;
 }
 
 .calc-history {
   font-size: 13px;
   color: var(--display-muted);
   min-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .calc-output {
-  font-size: 36px;
+  font-size: clamp(22px, 8vw, 36px);
   font-weight: 700;
   min-height: 44px;
   color: var(--display-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .calc-pad {
@@ -113,6 +120,18 @@ body {
 .key-muted {
   background-color: var(--surface-muted);
   color: #2a2f3a;
+}
+
+.key-memory {
+  background-color: #eef1f7;
+  color: #36415a;
+  font-size: 14px;
+}
+
+.key-fn {
+  background-color: #e9edf4;
+  color: #2f3b52;
+  font-size: 14px;
 }
 
 .key-operator {
