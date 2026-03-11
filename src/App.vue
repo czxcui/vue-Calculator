@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :class="[`mode-${activeMode}`]">
     <aside class="calc-sidebar" :class="{ open: sidebarOpen }">
       <div class="sidebar-header">计算器</div>
       <nav class="sidebar-menu">
@@ -21,6 +21,7 @@
         </button>
       </div>
     </aside>
+    <div v-if="sidebarOpen" class="overlay" @click="toggleSidebar"></div>
 
     <main class="calc-main">
       <header class="calc-topbar">
@@ -31,7 +32,7 @@
         </div>
         <div class="topbar-actions">
           <span v-if="memoryActive" class="memory-flag">M</span>
-          <button class="icon-button">🕘</button>
+          <button class="icon-button" @click="toggleHistory">🕘</button>
         </div>
       </header>
 
@@ -89,24 +90,43 @@
           <button class="memory-key" @click="memorySubtract">M-</button>
           <button class="memory-key" @click="memoryStore">MS</button>
         </div>
+        <div class="scientific-toolbar">
+          <div class="dropdown" :class="{ open: trigOpen }">
+            <button class="dropdown-toggle" @click="toggleTrig">三角学 ▾</button>
+            <div class="dropdown-menu">
+              <button class="dropdown-item" @click="applyUnary('sin')">sin</button>
+              <button class="dropdown-item" @click="applyUnary('cos')">cos</button>
+              <button class="dropdown-item" @click="applyUnary('tan')">tan</button>
+              <button class="dropdown-item" @click="applyUnary('hyp')">hyp</button>
+              <button class="dropdown-item" @click="applyUnary('sec')">sec</button>
+              <button class="dropdown-item" @click="applyUnary('csc')">csc</button>
+              <button class="dropdown-item" @click="applyUnary('cot')">cot</button>
+            </div>
+          </div>
+          <div class="dropdown" :class="{ open: funcOpen }">
+            <button class="dropdown-toggle" @click="toggleFunc">函数 ▾</button>
+            <div class="dropdown-menu">
+              <button class="dropdown-item" @click="applyUnary('abs')">|x|</button>
+              <button class="dropdown-item" @click="applyUnary('floor')">⌊x⌋</button>
+              <button class="dropdown-item" @click="applyUnary('ceil')">⌈x⌉</button>
+              <button class="dropdown-item" @click="applyUnary('rand')">rand</button>
+              <button class="dropdown-item" @click="toggleAngle">{{ angleUnitLabel }}</button>
+              <button class="dropdown-item" @click="applyUnary('exp')">exp</button>
+            </div>
+          </div>
+        </div>
+
         <section class="calc-pad calc-pad-scientific">
           <button class="key key-fn" @click="toggleAngle">{{ angleUnitLabel }}</button>
-          <button class="key key-fn" @click="applyUnary('sin')">sin</button>
-          <button class="key key-fn" @click="applyUnary('cos')">cos</button>
-          <button class="key key-fn" @click="applyUnary('tan')">tan</button>
-          <button class="key key-fn" @click="applyUnary('ln')">ln</button>
-
-          <button class="key key-fn" @click="applyUnary('log')">log</button>
-          <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
-          <button class="key key-fn" @click="applyUnary('exp')">eˣ</button>
           <button class="key key-fn" @click="insertConstant('pi')">π</button>
           <button class="key key-fn" @click="insertConstant('e')">e</button>
+          <button class="key key-muted" @click="clearAll">C</button>
+          <button class="key key-muted" @click="backspace">⌫</button>
 
           <button class="key key-muted" @click="handlePercent">%</button>
           <button class="key key-muted" @click="clearEntry">CE</button>
-          <button class="key key-muted" @click="clearAll">C</button>
-          <button class="key key-muted" @click="backspace">⌫</button>
           <button class="key key-operator" @click="setOperator('÷')">÷</button>
+          <button class="key key-fn" @click="setOperator('^')">xʸ</button>
 
           <button class="key key-fn" @click="applyUnary('reciprocal')">1/x</button>
           <button class="key key-fn" @click="applyUnary('square')">x²</button>
@@ -117,7 +137,6 @@
           <button class="key" @click="inputDigit('7')">7</button>
           <button class="key" @click="inputDigit('8')">8</button>
           <button class="key" @click="inputDigit('9')">9</button>
-          <button class="key key-fn" @click="setOperator('^')">xʸ</button>
           <button class="key key-operator" @click="setOperator('−')">−</button>
 
           <button class="key" @click="inputDigit('4')">4</button>
@@ -238,6 +257,19 @@
           </div>
         </div>
       </section>
+      <aside class="history-panel" :class="{ open: historyOpen }">
+        <div class="history-header">
+          <span>历史记录</span>
+          <button class="icon-button" @click="clearHistory">🗑</button>
+        </div>
+        <div class="history-list">
+          <div v-if="historyEntries.length === 0" class="history-empty">暂无记录</div>
+          <div v-for="entry in historyEntries" :key="entry.id" class="history-item">
+            <div class="history-expression">{{ entry.expression }}</div>
+            <div class="history-result">{{ entry.result }}</div>
+          </div>
+        </div>
+      </aside>
     </main>
   </div>
 </template>
@@ -255,6 +287,10 @@ const modes = [
 
 const activeMode = ref("standard");
 const sidebarOpen = ref(false);
+const historyOpen = ref(false);
+const historyEntries = ref([]);
+const trigOpen = ref(false);
+const funcOpen = ref(false);
 
 const displayValue = ref("0");
 const historyValue = ref("");
@@ -308,6 +344,28 @@ const selectMode = (modeId) => {
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
+};
+
+const toggleHistory = () => {
+  historyOpen.value = !historyOpen.value;
+};
+
+const clearHistory = () => {
+  historyEntries.value = [];
+};
+
+const toggleTrig = () => {
+  trigOpen.value = !trigOpen.value;
+  if (trigOpen.value) {
+    funcOpen.value = false;
+  }
+};
+
+const toggleFunc = () => {
+  funcOpen.value = !funcOpen.value;
+  if (funcOpen.value) {
+    trigOpen.value = false;
+  }
 };
 
 const formatNumber = (value) => {
@@ -592,6 +650,14 @@ const handleEquals = () => {
     setHistoryExpression(
       `${formatNumber(leftValue)} ${operatorLabels[currentOperator.value]} ${formatNumber(operand)} =`
     );
+    historyEntries.value = [
+      {
+        id: Date.now(),
+        expression: `${formatNumber(leftValue)} ${operatorLabels[currentOperator.value]} ${formatNumber(operand)} =`,
+        result: formatNumber(result),
+      },
+      ...historyEntries.value,
+    ];
     currentOperator.value = null;
     waitingForNewValue.value = true;
     return;
@@ -604,6 +670,14 @@ const handleEquals = () => {
     setHistoryExpression(
       `${formatNumber(leftValue)} ${operatorLabels[lastOperator.value]} ${formatNumber(lastOperand.value)} =`
     );
+    historyEntries.value = [
+      {
+        id: Date.now(),
+        expression: `${formatNumber(leftValue)} ${operatorLabels[lastOperator.value]} ${formatNumber(lastOperand.value)} =`,
+        result: formatNumber(result),
+      },
+      ...historyEntries.value,
+    ];
     waitingForNewValue.value = true;
   }
 };
@@ -644,6 +718,17 @@ const applyUnary = (type) => {
     result = Math.cos(toRadians(inputValue));
   } else if (type === "tan") {
     result = Math.tan(toRadians(inputValue));
+  } else if (type === "hyp") {
+    result = Math.sinh(toRadians(inputValue));
+  } else if (type === "sec") {
+    const cosValue = Math.cos(toRadians(inputValue));
+    result = cosValue === 0 ? NaN : 1 / cosValue;
+  } else if (type === "csc") {
+    const sinValue = Math.sin(toRadians(inputValue));
+    result = sinValue === 0 ? NaN : 1 / sinValue;
+  } else if (type === "cot") {
+    const tanValue = Math.tan(toRadians(inputValue));
+    result = tanValue === 0 ? NaN : 1 / tanValue;
   } else if (type === "ln") {
     result = inputValue <= 0 ? NaN : Math.log(inputValue);
   } else if (type === "log") {
@@ -652,6 +737,12 @@ const applyUnary = (type) => {
     result = Math.abs(inputValue);
   } else if (type === "exp") {
     result = Math.exp(inputValue);
+  } else if (type === "floor") {
+    result = Math.floor(inputValue);
+  } else if (type === "ceil") {
+    result = Math.ceil(inputValue);
+  } else if (type === "rand") {
+    result = Math.random();
   } else if (type === "fact") {
     result = factorial(inputValue);
   }
