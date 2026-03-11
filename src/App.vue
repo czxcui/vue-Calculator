@@ -1,64 +1,260 @@
 <template>
-  <div class="calculator">
-    <header class="calc-header">
-      <div class="calc-title">计算器</div>
-      <div class="calc-subtitle">标准</div>
-    </header>
-    <section class="calc-display">
-      <div class="calc-history">{{ historyValue }}</div>
-      <div class="calc-output">{{ displayValue }}</div>
-    </section>
-    <section class="calc-pad">
-      <button class="key key-memory" @click="memoryClear">MC</button>
-      <button class="key key-memory" @click="memoryRecall">MR</button>
-      <button class="key key-memory" @click="memoryAdd">M+</button>
-      <button class="key key-memory" @click="memorySubtract">M-</button>
+  <div class="app-shell">
+    <aside class="calc-sidebar" :class="{ open: sidebarOpen }">
+      <div class="sidebar-header">计算器</div>
+      <nav class="sidebar-menu">
+        <button
+          v-for="mode in modes"
+          :key="mode.id"
+          class="sidebar-item"
+          :class="{ active: activeMode === mode.id }"
+          @click="selectMode(mode.id)"
+        >
+          <span class="sidebar-icon">{{ mode.icon }}</span>
+          <span class="sidebar-label">{{ mode.label }}</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-item" @click="selectMode('settings')">
+          <span class="sidebar-icon">⚙</span>
+          <span class="sidebar-label">设置</span>
+        </button>
+      </div>
+    </aside>
 
-      <button class="key key-fn" @click="applyUnary('sin')">sin</button>
-      <button class="key key-fn" @click="applyUnary('cos')">cos</button>
-      <button class="key key-fn" @click="applyUnary('tan')">tan</button>
-      <button class="key key-fn" @click="applyUnary('ln')">ln</button>
+    <main class="calc-main">
+      <header class="calc-topbar">
+        <button class="icon-button" @click="toggleSidebar">☰</button>
+        <div class="mode-title">
+          <div class="mode-label">计算器</div>
+          <div class="mode-sub">{{ activeModeLabel }}</div>
+        </div>
+        <div class="topbar-actions">
+          <span v-if="memoryActive" class="memory-flag">M</span>
+          <button class="icon-button">🕘</button>
+        </div>
+      </header>
 
-      <button class="key key-fn" @click="applyUnary('log')">log</button>
-      <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
-      <button class="key key-fn" @click="applyUnary('exp')">eˣ</button>
-      <button class="key key-fn" @click="insertConstant('pi')">π</button>
+      <section v-if="showDisplay" class="calc-display">
+        <div class="calc-history">{{ historyValue }}</div>
+        <div class="calc-output">{{ displayValue }}</div>
+      </section>
 
-      <button class="key key-muted" @click="handlePercent">%</button>
-      <button class="key key-muted" @click="clearEntry">CE</button>
-      <button class="key key-muted" @click="clearAll">C</button>
-      <button class="key key-muted" @click="backspace">⌫</button>
+      <section v-if="activeMode === 'standard'" class="calc-panel">
+        <div class="memory-row">
+          <button class="memory-key" :disabled="!memoryActive" @click="memoryClear">MC</button>
+          <button class="memory-key" :disabled="!memoryActive" @click="memoryRecall">MR</button>
+          <button class="memory-key" @click="memoryAdd">M+</button>
+          <button class="memory-key" @click="memorySubtract">M-</button>
+          <button class="memory-key" @click="memoryStore">MS</button>
+        </div>
+        <section class="calc-pad">
+          <button class="key key-muted" @click="handlePercent">%</button>
+          <button class="key key-muted" @click="clearEntry">CE</button>
+          <button class="key key-muted" @click="clearAll">C</button>
+          <button class="key key-muted" @click="backspace">⌫</button>
 
-      <button class="key key-muted" @click="applyUnary('reciprocal')">1/x</button>
-      <button class="key key-muted" @click="applyUnary('square')">x²</button>
-      <button class="key key-muted" @click="applyUnary('sqrt')">√x</button>
-      <button class="key key-operator" @click="setOperator('÷')">÷</button>
+          <button class="key key-muted" @click="applyUnary('reciprocal')">1/x</button>
+          <button class="key key-muted" @click="applyUnary('square')">x²</button>
+          <button class="key key-muted" @click="applyUnary('sqrt')">√x</button>
+          <button class="key key-operator" @click="setOperator('÷')">÷</button>
 
-      <button class="key" @click="inputDigit('7')">7</button>
-      <button class="key" @click="inputDigit('8')">8</button>
-      <button class="key" @click="inputDigit('9')">9</button>
-      <button class="key key-operator" @click="setOperator('×')">×</button>
+          <button class="key" @click="inputDigit('7')">7</button>
+          <button class="key" @click="inputDigit('8')">8</button>
+          <button class="key" @click="inputDigit('9')">9</button>
+          <button class="key key-operator" @click="setOperator('×')">×</button>
 
-      <button class="key" @click="inputDigit('4')">4</button>
-      <button class="key" @click="inputDigit('5')">5</button>
-      <button class="key" @click="inputDigit('6')">6</button>
-      <button class="key key-operator" @click="setOperator('−')">−</button>
+          <button class="key" @click="inputDigit('4')">4</button>
+          <button class="key" @click="inputDigit('5')">5</button>
+          <button class="key" @click="inputDigit('6')">6</button>
+          <button class="key key-operator" @click="setOperator('−')">−</button>
 
-      <button class="key" @click="inputDigit('1')">1</button>
-      <button class="key" @click="inputDigit('2')">2</button>
-      <button class="key" @click="inputDigit('3')">3</button>
-      <button class="key key-operator" @click="setOperator('+')">+</button>
+          <button class="key" @click="inputDigit('1')">1</button>
+          <button class="key" @click="inputDigit('2')">2</button>
+          <button class="key" @click="inputDigit('3')">3</button>
+          <button class="key key-operator" @click="setOperator('+')">+</button>
 
-      <button class="key" @click="toggleSign">±</button>
-      <button class="key" @click="inputDigit('0')">0</button>
-      <button class="key" @click="inputDecimal">.</button>
-      <button class="key key-equals" @click="handleEquals">=</button>
-    </section>
+          <button class="key" @click="toggleSign">±</button>
+          <button class="key" @click="inputDigit('0')">0</button>
+          <button class="key" @click="inputDecimal">.</button>
+          <button class="key key-equals" @click="handleEquals">=</button>
+        </section>
+      </section>
+
+      <section v-if="activeMode === 'scientific'" class="calc-panel">
+        <div class="memory-row">
+          <button class="memory-key" :disabled="!memoryActive" @click="memoryClear">MC</button>
+          <button class="memory-key" :disabled="!memoryActive" @click="memoryRecall">MR</button>
+          <button class="memory-key" @click="memoryAdd">M+</button>
+          <button class="memory-key" @click="memorySubtract">M-</button>
+          <button class="memory-key" @click="memoryStore">MS</button>
+        </div>
+        <section class="calc-pad calc-pad-scientific">
+          <button class="key key-fn" @click="toggleAngle">{{ angleUnitLabel }}</button>
+          <button class="key key-fn" @click="applyUnary('sin')">sin</button>
+          <button class="key key-fn" @click="applyUnary('cos')">cos</button>
+          <button class="key key-fn" @click="applyUnary('tan')">tan</button>
+          <button class="key key-fn" @click="applyUnary('ln')">ln</button>
+
+          <button class="key key-fn" @click="applyUnary('log')">log</button>
+          <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
+          <button class="key key-fn" @click="applyUnary('exp')">eˣ</button>
+          <button class="key key-fn" @click="insertConstant('pi')">π</button>
+          <button class="key key-fn" @click="insertConstant('e')">e</button>
+
+          <button class="key key-muted" @click="handlePercent">%</button>
+          <button class="key key-muted" @click="clearEntry">CE</button>
+          <button class="key key-muted" @click="clearAll">C</button>
+          <button class="key key-muted" @click="backspace">⌫</button>
+          <button class="key key-operator" @click="setOperator('÷')">÷</button>
+
+          <button class="key key-fn" @click="applyUnary('reciprocal')">1/x</button>
+          <button class="key key-fn" @click="applyUnary('square')">x²</button>
+          <button class="key key-fn" @click="applyUnary('sqrt')">√x</button>
+          <button class="key key-fn" @click="applyUnary('fact')">n!</button>
+          <button class="key key-operator" @click="setOperator('×')">×</button>
+
+          <button class="key" @click="inputDigit('7')">7</button>
+          <button class="key" @click="inputDigit('8')">8</button>
+          <button class="key" @click="inputDigit('9')">9</button>
+          <button class="key key-fn" @click="setOperator('^')">xʸ</button>
+          <button class="key key-operator" @click="setOperator('−')">−</button>
+
+          <button class="key" @click="inputDigit('4')">4</button>
+          <button class="key" @click="inputDigit('5')">5</button>
+          <button class="key" @click="inputDigit('6')">6</button>
+          <button class="key key-fn" @click="applyUnary('cube')">x³</button>
+          <button class="key key-operator" @click="setOperator('+')">+</button>
+
+          <button class="key" @click="toggleSign">±</button>
+          <button class="key" @click="inputDigit('1')">1</button>
+          <button class="key" @click="inputDigit('2')">2</button>
+          <button class="key" @click="inputDigit('3')">3</button>
+          <button class="key key-equals" @click="handleEquals">=</button>
+
+          <button class="key" @click="inputDigit('0')">0</button>
+          <button class="key" @click="inputDecimal">.</button>
+          <button class="key key-fn" @click="insertConstant('pi')">π</button>
+          <button class="key key-fn" @click="insertConstant('e')">e</button>
+          <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
+        </section>
+      </section>
+
+      <section v-if="activeMode === 'programmer'" class="calc-panel">
+        <div class="programmer-bases">
+          <button
+            v-for="base in programmerBases"
+            :key="base"
+            class="base-key"
+            :class="{ active: programmerBase === base }"
+            @click="setProgrammerBase(base)"
+          >
+            {{ base }}
+          </button>
+        </div>
+        <div class="programmer-values">
+          <div class="programmer-row">
+            <span class="programmer-label">HEX</span>
+            <span class="programmer-value">{{ programmerHex }}</span>
+          </div>
+          <div class="programmer-row">
+            <span class="programmer-label">DEC</span>
+            <span class="programmer-value">{{ programmerDec }}</span>
+          </div>
+          <div class="programmer-row">
+            <span class="programmer-label">OCT</span>
+            <span class="programmer-value">{{ programmerOct }}</span>
+          </div>
+          <div class="programmer-row">
+            <span class="programmer-label">BIN</span>
+            <span class="programmer-value">{{ programmerBin }}</span>
+          </div>
+        </div>
+        <section class="calc-pad">
+          <button class="key key-muted" @click="clearEntry">CE</button>
+          <button class="key key-muted" @click="clearAll">C</button>
+          <button class="key key-muted" @click="backspace">⌫</button>
+          <button class="key key-operator" @click="setOperator('÷')">÷</button>
+
+          <button class="key" @click="inputDigit('7')">7</button>
+          <button class="key" @click="inputDigit('8')">8</button>
+          <button class="key" @click="inputDigit('9')">9</button>
+          <button class="key key-operator" @click="setOperator('×')">×</button>
+
+          <button class="key" @click="inputDigit('4')">4</button>
+          <button class="key" @click="inputDigit('5')">5</button>
+          <button class="key" @click="inputDigit('6')">6</button>
+          <button class="key key-operator" @click="setOperator('−')">−</button>
+
+          <button class="key" @click="inputDigit('1')">1</button>
+          <button class="key" @click="inputDigit('2')">2</button>
+          <button class="key" @click="inputDigit('3')">3</button>
+          <button class="key key-operator" @click="setOperator('+')">+</button>
+
+          <button class="key" @click="toggleSign">±</button>
+          <button class="key" @click="inputDigit('0')">0</button>
+          <button class="key" @click="inputDecimal">.</button>
+          <button class="key key-equals" @click="handleEquals">=</button>
+        </section>
+      </section>
+
+      <section v-if="activeMode === 'date'" class="calc-panel">
+        <div class="date-panel">
+          <div class="date-row">
+            <label class="date-label">开始日期</label>
+            <input v-model="dateStart" type="date" class="date-input" />
+          </div>
+          <div class="date-row">
+            <label class="date-label">结束日期</label>
+            <input v-model="dateEnd" type="date" class="date-input" />
+          </div>
+          <div class="date-result">{{ dateDiffText }}</div>
+        </div>
+      </section>
+
+      <section v-if="activeMode === 'converter'" class="calc-panel">
+        <div class="converter-panel">
+          <div class="converter-row">
+            <label class="date-label">类别</label>
+            <select v-model="converterCategory" class="date-input">
+              <option value="length">长度</option>
+              <option value="mass">质量</option>
+              <option value="temperature">温度</option>
+            </select>
+          </div>
+          <div class="converter-grid">
+            <div class="converter-card">
+              <input v-model.number="converterFromValue" type="number" class="date-input" />
+              <select v-model="converterFromUnit" class="date-input">
+                <option v-for="unit in converterUnits" :key="unit" :value="unit">{{ unit }}</option>
+              </select>
+            </div>
+            <div class="converter-card">
+              <input :value="converterToValue" type="text" class="date-input" disabled />
+              <select v-model="converterToUnit" class="date-input">
+                <option v-for="unit in converterUnits" :key="unit" :value="unit">{{ unit }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+
+const modes = [
+  { id: "standard", label: "标准", icon: "▦" },
+  { id: "scientific", label: "科学", icon: "∑" },
+  { id: "programmer", label: "程序员", icon: "</>" },
+  { id: "date", label: "日期计算", icon: "📅" },
+  { id: "converter", label: "转换器", icon: "⇄" },
+];
+
+const activeMode = ref("standard");
+const sidebarOpen = ref(false);
 
 const displayValue = ref("0");
 const historyValue = ref("");
@@ -69,12 +265,49 @@ const lastOperator = ref(null);
 const lastOperand = ref(null);
 const memoryValue = ref(0);
 const memoryActive = ref(false);
+const angleUnit = ref("deg");
+
+const dateStart = ref("");
+const dateEnd = ref("");
+
+const converterCategory = ref("length");
+const converterFromValue = ref(0);
+const converterFromUnit = ref("m");
+const converterToUnit = ref("km");
+
+const programmerBase = ref(10);
+const programmerBases = [16, 10, 8, 2];
+
+const showDisplay = computed(() =>
+  ["standard", "scientific", "programmer"].includes(activeMode.value)
+);
+
+const activeModeLabel = computed(() => {
+  const match = modes.find((mode) => mode.id === activeMode.value);
+  return match ? match.label : "标准";
+});
+
+const angleUnitLabel = computed(() => (angleUnit.value === "deg" ? "DEG" : "RAD"));
 
 const operatorLabels = {
   "+": "+",
   "−": "−",
   "×": "×",
   "÷": "÷",
+  "^": "^",
+};
+
+const selectMode = (modeId) => {
+  if (modeId === "settings") {
+    return;
+  }
+
+  activeMode.value = modeId;
+  sidebarOpen.value = false;
+};
+
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
 };
 
 const formatNumber = (value) => {
@@ -106,7 +339,35 @@ const setHistoryExpression = (text) => {
   historyValue.value = text;
 };
 
-const toRadians = (value) => (value * Math.PI) / 180;
+const dateDiffText = ref("选择开始和结束日期");
+const converterUnits = ref(["m", "km", "cm", "mm"]);
+const converterToValue = ref("0");
+const programmerHex = ref("0");
+const programmerDec = ref("0");
+const programmerOct = ref("0");
+const programmerBin = ref("0");
+
+const setProgrammerBase = (base) => {
+  programmerBase.value = base;
+};
+
+const toRadians = (value) => (angleUnit.value === "deg" ? (value * Math.PI) / 180 : value);
+
+const factorial = (value) => {
+  if (!Number.isInteger(value) || value < 0) {
+    return NaN;
+  }
+
+  if (value > 170) {
+    return Infinity;
+  }
+
+  let result = 1;
+  for (let i = 2; i <= value; i += 1) {
+    result *= i;
+  }
+  return result;
+};
 
 const inputDigit = (digit) => {
   if (displayValue.value === "错误") {
@@ -192,6 +453,8 @@ const calculate = (firstValue, secondValue, operator) => {
       return firstValue * secondValue;
     case "÷":
       return secondValue === 0 ? NaN : firstValue / secondValue;
+    case "^":
+      return Math.pow(firstValue, secondValue);
     default:
       return secondValue;
   }
@@ -284,6 +547,8 @@ const applyUnary = (type) => {
     result = inputValue === 0 ? NaN : 1 / inputValue;
   } else if (type === "square") {
     result = inputValue * inputValue;
+  } else if (type === "cube") {
+    result = inputValue * inputValue * inputValue;
   } else if (type === "sqrt") {
     result = inputValue < 0 ? NaN : Math.sqrt(inputValue);
   } else if (type === "sin") {
@@ -300,6 +565,8 @@ const applyUnary = (type) => {
     result = Math.abs(inputValue);
   } else if (type === "exp") {
     result = Math.exp(inputValue);
+  } else if (type === "fact") {
+    result = factorial(inputValue);
   }
 
   displayValue.value = formatNumber(result);
@@ -310,10 +577,16 @@ const insertConstant = (constant) => {
   let value = 0;
   if (constant === "pi") {
     value = Math.PI;
+  } else if (constant === "e") {
+    value = Math.E;
   }
 
   displayValue.value = formatNumber(value);
   waitingForNewValue.value = false;
+};
+
+const toggleAngle = () => {
+  angleUnit.value = angleUnit.value === "deg" ? "rad" : "deg";
 };
 
 const memoryClear = () => {
@@ -347,6 +620,16 @@ const memorySubtract = () => {
   }
 
   memoryValue.value -= inputValue;
+  memoryActive.value = true;
+};
+
+const memoryStore = () => {
+  const inputValue = Number(displayValue.value);
+  if (!Number.isFinite(inputValue)) {
+    return;
+  }
+
+  memoryValue.value = inputValue;
   memoryActive.value = true;
 };
 </script>
