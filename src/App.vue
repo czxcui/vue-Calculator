@@ -83,12 +83,17 @@
       </section>
 
       <section v-if="activeMode === 'scientific'" class="calc-panel">
+        <div class="scientific-meta">
+          <button class="meta-key" @click="toggleAngle">DEG</button>
+          <button class="meta-key" @click="toggleFeMode">F-E</button>
+        </div>
         <div class="memory-row">
           <button class="memory-key" :disabled="!memoryActive" @click="memoryClear">MC</button>
           <button class="memory-key" :disabled="!memoryActive" @click="memoryRecall">MR</button>
           <button class="memory-key" @click="memoryAdd">M+</button>
           <button class="memory-key" @click="memorySubtract">M-</button>
           <button class="memory-key" @click="memoryStore">MS</button>
+          <button class="memory-key" @click="noop">Mv</button>
         </div>
         <div class="scientific-toolbar">
           <div class="dropdown" :class="{ open: trigOpen }">
@@ -117,45 +122,47 @@
         </div>
 
         <section class="calc-pad calc-pad-scientific">
-          <button class="key key-fn" @click="toggleAngle">{{ angleUnitLabel }}</button>
+          <button class="key key-fn" @click="noop">2nd</button>
           <button class="key key-fn" @click="insertConstant('pi')">π</button>
           <button class="key key-fn" @click="insertConstant('e')">e</button>
           <button class="key key-muted" @click="clearAll">C</button>
           <button class="key key-muted" @click="backspace">⌫</button>
 
-          <button class="key key-muted" @click="handlePercent">%</button>
-          <button class="key key-muted" @click="clearEntry">CE</button>
-          <button class="key key-operator" @click="setOperator('÷')">÷</button>
-          <button class="key key-fn" @click="setOperator('^')">xʸ</button>
-
-          <button class="key key-fn" @click="applyUnary('reciprocal')">1/x</button>
           <button class="key key-fn" @click="applyUnary('square')">x²</button>
-          <button class="key key-fn" @click="applyUnary('sqrt')">√x</button>
-          <button class="key key-fn" @click="applyUnary('fact')">n!</button>
-          <button class="key key-operator" @click="setOperator('×')">×</button>
+          <button class="key key-fn" @click="applyUnary('reciprocal')">1/x</button>
+          <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
+          <button class="key key-fn" @click="applyUnary('exp')">exp</button>
+          <button class="key key-fn" @click="setOperator('mod')">mod</button>
 
+          <button class="key key-fn" @click="applyUnary('sqrt')">√x</button>
+          <button class="key key-fn" @click="noop">(</button>
+          <button class="key key-fn" @click="noop">)</button>
+          <button class="key key-fn" @click="applyUnary('fact')">n!</button>
+          <button class="key key-operator" @click="setOperator('÷')">÷</button>
+
+          <button class="key key-fn" @click="setOperator('^')">xʸ</button>
           <button class="key" @click="inputDigit('7')">7</button>
           <button class="key" @click="inputDigit('8')">8</button>
           <button class="key" @click="inputDigit('9')">9</button>
-          <button class="key key-operator" @click="setOperator('−')">−</button>
+          <button class="key key-operator" @click="setOperator('×')">×</button>
 
+          <button class="key key-fn" @click="applyUnary('pow10')">10ˣ</button>
           <button class="key" @click="inputDigit('4')">4</button>
           <button class="key" @click="inputDigit('5')">5</button>
           <button class="key" @click="inputDigit('6')">6</button>
-          <button class="key key-fn" @click="applyUnary('cube')">x³</button>
-          <button class="key key-operator" @click="setOperator('+')">+</button>
+          <button class="key key-operator" @click="setOperator('−')">−</button>
 
-          <button class="key" @click="toggleSign">±</button>
+          <button class="key key-fn" @click="applyUnary('log')">log</button>
           <button class="key" @click="inputDigit('1')">1</button>
           <button class="key" @click="inputDigit('2')">2</button>
           <button class="key" @click="inputDigit('3')">3</button>
-          <button class="key key-equals" @click="handleEquals">=</button>
+          <button class="key key-operator" @click="setOperator('+')">+</button>
 
+          <button class="key key-fn" @click="applyUnary('ln')">ln</button>
+          <button class="key" @click="toggleSign">±</button>
           <button class="key" @click="inputDigit('0')">0</button>
           <button class="key" @click="inputDecimal">.</button>
-          <button class="key key-fn" @click="insertConstant('pi')">π</button>
-          <button class="key key-fn" @click="insertConstant('e')">e</button>
-          <button class="key key-fn" @click="applyUnary('abs')">|x|</button>
+          <button class="key key-equals" @click="handleEquals">=</button>
         </section>
       </section>
 
@@ -291,6 +298,7 @@ const historyOpen = ref(false);
 const historyEntries = ref([]);
 const trigOpen = ref(false);
 const funcOpen = ref(false);
+const feMode = ref(false);
 
 const displayValue = ref("0");
 const historyValue = ref("");
@@ -331,6 +339,7 @@ const operatorLabels = {
   "×": "×",
   "÷": "÷",
   "^": "^",
+  mod: "mod",
 };
 
 const selectMode = (modeId) => {
@@ -367,6 +376,12 @@ const toggleFunc = () => {
     trigOpen.value = false;
   }
 };
+
+const toggleFeMode = () => {
+  feMode.value = !feMode.value;
+};
+
+const noop = () => {};
 
 const formatNumber = (value) => {
   if (!Number.isFinite(value)) {
@@ -600,6 +615,8 @@ const calculate = (firstValue, secondValue, operator) => {
       return secondValue === 0 ? NaN : firstValue / secondValue;
     case "^":
       return Math.pow(firstValue, secondValue);
+    case "mod":
+      return secondValue === 0 ? NaN : firstValue % secondValue;
     default:
       return secondValue;
   }
@@ -743,6 +760,8 @@ const applyUnary = (type) => {
     result = Math.ceil(inputValue);
   } else if (type === "rand") {
     result = Math.random();
+  } else if (type === "pow10") {
+    result = Math.pow(10, inputValue);
   } else if (type === "fact") {
     result = factorial(inputValue);
   }
