@@ -31,7 +31,8 @@ body {
 }
 
 #app {
-  width: min(920px, 96vw);
+  width: 360px;
+  height: 640px;
 }
 
 .app-shell {
@@ -42,7 +43,8 @@ body {
   background: var(--panel-bg);
   overflow: hidden;
   box-shadow: 0 16px 40px rgba(37, 46, 66, 0.16);
-  min-height: 640px;
+  width: 100%;
+  height: 100%;
 }
 
 .calc-sidebar {
@@ -125,7 +127,7 @@ body {
   gap: 12px;
   padding: 16px 18px 20px;
   background: #faf7f4;
-  min-height: 640px;
+  height: 100%;
 }
 
 .calc-topbar {
@@ -527,13 +529,10 @@ body {
   margin-top: 20px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 420px) {
   #app {
-    width: min(520px, 96vw);
-  }
-
-  .app-shell {
-    min-height: 640px;
+    width: min(360px, 96vw);
+    height: 640px;
   }
 }
 
