@@ -22,6 +22,7 @@
       </div>
     </aside>
     <div v-if="sidebarOpen" class="overlay" @click="toggleSidebar"></div>
+    <div v-if="historyOpen" class="history-overlay" @click="closeHistory"></div>
 
     <main class="calc-main">
       <header class="calc-topbar">
@@ -264,11 +265,8 @@
           </div>
         </div>
       </section>
-      <aside class="history-panel" :class="{ open: historyOpen }">
-        <div class="history-header">
-          <span>历史记录</span>
-          <button class="icon-button" @click="clearHistory">🗑</button>
-        </div>
+      <aside class="history-drawer" :class="{ open: historyOpen }" @click.stop>
+        <div class="history-header">历史记录</div>
         <div class="history-list">
           <div v-if="historyEntries.length === 0" class="history-empty">暂无记录</div>
           <div v-for="entry in historyEntries" :key="entry.id" class="history-item">
@@ -276,6 +274,7 @@
             <div class="history-result">{{ entry.result }}</div>
           </div>
         </div>
+        <button class="history-clear" @click="clearHistory">🗑</button>
       </aside>
     </main>
   </div>
@@ -357,6 +356,10 @@ const toggleSidebar = () => {
 
 const toggleHistory = () => {
   historyOpen.value = !historyOpen.value;
+};
+
+const closeHistory = () => {
+  historyOpen.value = false;
 };
 
 const clearHistory = () => {
