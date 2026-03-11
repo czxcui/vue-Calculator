@@ -243,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 
 const modes = [
   { id: "standard", label: "标准", icon: "▦" },
@@ -339,13 +339,100 @@ const setHistoryExpression = (text) => {
   historyValue.value = text;
 };
 
-const dateDiffText = ref("选择开始和结束日期");
-const converterUnits = ref(["m", "km", "cm", "mm"]);
-const converterToValue = ref("0");
-const programmerHex = ref("0");
-const programmerDec = ref("0");
-const programmerOct = ref("0");
-const programmerBin = ref("0");
+const dateDiffText = computed(() => {
+  if (!dateStart.value || !dateEnd.value) {
+    return "选择开始和结束日期";
+  }
+
+  const start = new Date(dateStart.value);
+  const end = new Date(dateEnd.value);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "日期无效";
+  }
+
+  const diffMs = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return `相差 ${diffDays} 天`;
+});
+
+const converterUnitOptions = {
+  length: ["m", "km", "cm", "mm"],
+  mass: ["kg", "g", "lb"],
+  temperature: ["C", "F", "K"],
+};
+
+const converterUnits = computed(() => converterUnitOptions[converterCategory.value] || []);
+
+const convertValue = (value, fromUnit, toUnit, category) => {
+  if (category === "temperature") {
+    if (fromUnit === toUnit) return value;
+    let celsius = value;
+    if (fromUnit === "F") celsius = (value - 32) / 1.8;
+    if (fromUnit === "K") celsius = value - 273.15;
+    if (toUnit === "C") return celsius;
+    if (toUnit === "F") return celsius * 1.8 + 32;
+    if (toUnit === "K") return celsius + 273.15;
+  }
+
+  const factors = {
+    length: {
+      m: 1,
+      km: 1000,
+      cm: 0.01,
+      mm: 0.001,
+    },
+    mass: {
+      kg: 1,
+      g: 0.001,
+      lb: 0.45359237,
+    },
+  };
+
+  const base = factors[category] || {};
+  if (!base[fromUnit] || !base[toUnit]) {
+    return value;
+  }
+
+  const valueInBase = value * base[fromUnit];
+  return valueInBase / base[toUnit];
+};
+
+const converterToValue = computed(() => {
+  const value = Number(converterFromValue.value);
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  const converted = convertValue(
+    value,
+    converterFromUnit.value,
+    converterToUnit.value,
+    converterCategory.value
+  );
+  return formatNumber(converted);
+});
+
+watch(converterCategory, (category) => {
+  const defaults = converterUnitOptions[category] || [];
+  converterFromUnit.value = defaults[0] || "";
+  converterToUnit.value = defaults[1] || defaults[0] || "";
+  converterFromValue.value = 0;
+});
+
+const programmerNumber = computed(() => {
+  const value = Number(displayValue.value);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.trunc(value);
+});
+
+const formatProgrammerValue = (value, base) => value.toString(base).toUpperCase();
+
+const programmerHex = computed(() => formatProgrammerValue(programmerNumber.value, 16));
+const programmerDec = computed(() => formatProgrammerValue(programmerNumber.value, 10));
+const programmerOct = computed(() => formatProgrammerValue(programmerNumber.value, 8));
+const programmerBin = computed(() => formatProgrammerValue(programmerNumber.value, 2));
 
 const setProgrammerBase = (base) => {
   programmerBase.value = base;
