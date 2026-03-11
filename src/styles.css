@@ -31,26 +31,46 @@ body {
 }
 
 #app {
-  width: min(960px, 96vw);
+  width: min(920px, 96vw);
 }
 
 .app-shell {
+  position: relative;
   display: grid;
-  grid-template-columns: 220px 1fr;
   border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--panel-bg);
   overflow: hidden;
   box-shadow: 0 16px 40px rgba(37, 46, 66, 0.16);
+  min-height: 640px;
 }
 
 .calc-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
   background: var(--sidebar-bg);
   border-right: 1px solid #e1d9d2;
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
   gap: 12px;
+  transform: translateX(-100%);
+  transition: transform 180ms ease;
+  z-index: 20;
+}
+
+.calc-sidebar.open {
+  transform: translateX(0);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 15;
 }
 
 .sidebar-header {
@@ -100,10 +120,12 @@ body {
 }
 
 .calc-main {
+  position: relative;
   display: grid;
   gap: 12px;
   padding: 16px 18px 20px;
   background: #faf7f4;
+  min-height: 640px;
 }
 
 .calc-topbar {
@@ -184,6 +206,7 @@ body {
 .calc-panel {
   display: grid;
   gap: 12px;
+  min-height: 360px;
 }
 
 .memory-row {
@@ -215,6 +238,53 @@ body {
 
 .calc-pad-scientific {
   grid-template-columns: repeat(5, 1fr);
+}
+
+.scientific-toolbar {
+  display: flex;
+  gap: 12px;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  border: 1px solid #e0d9d2;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #f2e9e1;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  min-width: 240px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e5ddd6;
+  box-shadow: 0 12px 30px rgba(37, 46, 66, 0.18);
+  z-index: 25;
+}
+
+.dropdown.open .dropdown-menu {
+  display: grid;
+}
+
+.dropdown-item {
+  border: 1px solid #e0d9d2;
+  border-radius: 10px;
+  padding: 8px 0;
+  background: #f7f1ec;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .key {
@@ -252,6 +322,22 @@ body {
 
 .key-operator {
   background-color: #e6ded6;
+}
+
+.mode-scientific .calc-main {
+  background: #f6efea;
+}
+
+.mode-scientific .key {
+  background-color: #fff;
+}
+
+.mode-scientific .key-muted {
+  background-color: #f2e9e1;
+}
+
+.mode-scientific .key-fn {
+  background-color: #f4ebe4;
 }
 
 .key-equals {
@@ -318,6 +404,7 @@ body {
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e5ddd6;
+  min-height: 360px;
 }
 
 .date-row {
@@ -359,29 +446,78 @@ body {
   gap: 8px;
 }
 
+.history-panel {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  width: 240px;
+  height: 420px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e0d9d2;
+  box-shadow: 0 12px 30px rgba(37, 46, 66, 0.18);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  transform: translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 12;
+}
+
+.history-panel.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #eee4db;
+}
+
+.history-list {
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+  overflow: auto;
+}
+
+.history-item {
+  display: grid;
+  gap: 4px;
+}
+
+.history-expression {
+  font-size: 12px;
+  color: #6e645c;
+  text-align: right;
+}
+
+.history-result {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.history-empty {
+  font-size: 12px;
+  color: #8b8178;
+  text-align: center;
+  margin-top: 20px;
+}
+
 @media (max-width: 860px) {
   #app {
-    width: min(480px, 96vw);
+    width: min(520px, 96vw);
   }
 
   .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .calc-sidebar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 240px;
-    transform: translateX(-100%);
-    transition: transform 180ms ease;
-    z-index: 10;
-    box-shadow: 0 10px 30px rgba(37, 46, 66, 0.2);
-  }
-
-  .calc-sidebar.open {
-    transform: translateX(0);
+    min-height: 640px;
   }
 }
 
