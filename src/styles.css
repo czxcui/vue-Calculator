@@ -211,8 +211,24 @@ body {
 
 .memory-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
+}
+
+.scientific-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meta-key {
+  border: none;
+  border-radius: 10px;
+  padding: 6px 0;
+  background: transparent;
+  color: #6e645c;
+  font-size: 12px;
+  text-align: left;
 }
 
 .memory-key {
